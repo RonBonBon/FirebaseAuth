@@ -6,4 +6,10 @@
     <string name="drawer_close">Close</string>
 
     <string name="web_client_id">Include your web client id here</string>
+    <string name="title_activity_nav_drawer">NavDrawerActivity</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
 </resources>

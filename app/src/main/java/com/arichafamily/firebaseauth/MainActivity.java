@@ -9,6 +9,14 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.arichafamily.firebaseauth.model.User;
+import com.arichafamily.firebaseauth.utils.Constants;
+import com.arichafamily.firebaseauth.utils.SharedPrefManager;
+import com.arichafamily.firebaseauth.utils.Utils;
+
+import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
+import com.firebase.client.ServerValue;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -20,7 +28,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+
+import java.util.HashMap;
 
 public class MainActivity extends BaseActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
@@ -72,6 +83,55 @@ public class MainActivity extends BaseActivity implements GoogleApiClient.Connec
                 }
             }
         };
+    }
+
+    //This method creates a new user on our own Firebase database
+    //after a successful Authentication on Firebase
+    //It also saves the user info to SharedPreference
+    private void createUserInFirebaseHelper(){
+
+        //Since Firebase does not allow "." in the key name, we'll have to encode and change the "." to ","
+        // using the encodeEmail method in class Utils
+        final String encodedEmail = Utils.encodeEmail(email.toLowerCase());
+
+        //create an object of Firebase database and pass the the Firebase URL
+        final Firebase userLocation = new Firebase(Constants.FIREBASE_URL_USERS).child(encodedEmail);
+
+        //Add a Listerner to that above location
+        userLocation.addListenerForSingleValueEvent(new com.firebase.client.ValueEventListener() {
+            @Override
+            public void onDataChange(com.firebase.client.DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getValue() == null){
+                    /* Set raw version of date to the ServerValue.TIMESTAMP value and save into dateCreatedMap */
+                    HashMap<String, Object> timestampJoined = new HashMap<>();
+                    timestampJoined.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
+
+                    // Insert into Firebase database
+                    User newUser = new User(name, photo, encodedEmail, timestampJoined);
+                    userLocation.setValue(newUser);
+
+                    Toast.makeText(MainActivity.this, "Account created!", Toast.LENGTH_SHORT).show();
+
+                    // After saving data to Firebase, goto next activity
+//                    Intent intent = new Intent(MainActivity.this, NavDrawerActivity.class);
+//                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//                    startActivity(intent);
+//                    finish();
+                }
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+
+                Log.d(TAG, getString(R.string.log_error_occurred) + firebaseError.getMessage());
+                //hideProgressDialog();
+                if (firebaseError.getCode() == FirebaseError.EMAIL_TAKEN){
+                }
+                else {
+                    Toast.makeText(MainActivity.this, firebaseError.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     // This method configures Google SignIn
